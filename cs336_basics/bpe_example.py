@@ -27,39 +27,56 @@ def merge_pair(tokens: tuple[int, ...],
 
     return tuple(result)
 
+def pick_best_pair(pair_counts, vocab):
+    best_pair = None
+    if len(pair_counts) == 0:
+        return best_pair
+    max_count = max(pair_counts.values())
+    for key in pair_counts:
+        if pair_counts[key] < max_count:
+            continue
+        if best_pair is None:
+            best_pair = key
+            continue
+        old_pair = (vocab[best_pair[0]], vocab[best_pair[1]])
+        new_pair = (vocab[key[0]], vocab[key[1]])
+        best_pair = key if new_pair > old_pair else best_pair
+    return best_pair
+
 def pretokenization(text, num_merges):
     vocab = {}
-    for i in range(256):
+    vocab_size  = 256
+    for i in range(vocab_size):
         vocab[i] = bytes([i])
-    vocab[256] = '<|endoftext|>'.encode('utf')
+    vocab[vocab_size] = '<|endoftext|>'.encode('utf')
+    vocab_size += 1
     
     word_counts = Counter()
     for word in text.split():
         word_counts[tuple(word.encode('utf'))] += 1
-        
-    vocab_size = 257
+
     for new_token in range(vocab_size, vocab_size+num_merges):
         # 1. Count pairs of CURRENT token IDs
         pair_counts = Counter()
-
         for tokens, count in word_counts.items():
             for pair in zip(tokens, tokens[1:]):
                 pair_counts[pair] += count
-
+        
         # 2. Pick best pair
-        max_count = max(pair_counts.values())
-        best_pair = None
-        for pair in pair_counts:
-            
-        best_pair = max([(count, (vocab[pair[0]], vocab[pair[1]])) for pair, count in pair_counts.items()])[1]
-        print(f"best_pair={best_pair}")
+        best_pair = pick_best_pair(pair_counts, vocab)
+        if best_pair is None:
+            break
+        print(f"best_pair={best_pair}, count={pair_counts[best_pair]}")
 
         # 3. Add its byte representation to vocab
-        vocab[new_token] = best_pair[0] + best_pair[1]
+        vocab[new_token] = (
+            vocab[best_pair[0]]
+            + vocab[best_pair[1]]
+        )
 
         # 4. Replace that pair everywhere with new token ID
         word_counts = {
-            merge_pair(tokens, vocab[new_token], new_token): count
+            merge_pair(tokens, best_pair, new_token): count
             for tokens, count in word_counts.items()
         }
 
