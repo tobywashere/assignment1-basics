@@ -4,12 +4,15 @@ from collections import Counter
 text = """                                                                                                                                                                                                       
 low low low low low                                                                                                                                                                                              
 lower lower widest widest widest                                                                                                                                                                                 
-newest newest newest newest newest newest                                                                                                                                                                        
+newest newest newest newest newest newest
+booook
 """
 
 def merge_pair(tokens: tuple[int, ...],
                pair: tuple[int, int],
-               new_token: int) -> tuple[int, ...]:
+               new_token: int,
+               pair_counts: dict[tuple[int, int], int],
+               count: int) -> tuple[int, ...]:
     result = []
     i = 0
 
@@ -19,9 +22,25 @@ def merge_pair(tokens: tuple[int, ...],
             and tokens[i] == pair[0]
             and tokens[i + 1] == pair[1]
         ):
+            if i > 0:
+                old_pair = (tokens[i-1], tokens[i])
+                pair_counts[old_pair] -= count
+                assert(pair_counts[old_pair] >= 0)
+                if pair_counts[old_pair] == 0:
+                    del pair_counts[old_pair]
+                new_pair = (result[-1], new_token)
+                pair_counts[new_pair] += count
             result.append(new_token)
             i += 2
         else:
+            if result and result[-1] == new_token:
+                old_pair = (tokens[i-1], tokens[i])
+                pair_counts[old_pair] -= count
+                assert(pair_counts[old_pair] >= 0)
+                if pair_counts[old_pair] == 0:
+                    del pair_counts[old_pair]
+                new_pair = (result[-1], tokens[i])
+                pair_counts[new_pair] += count
             result.append(tokens[i])
             i += 1
 
@@ -55,13 +74,13 @@ def pretokenization(text, num_merges):
     for word in text.split():
         word_counts[tuple(word.encode('utf'))] += 1
 
-    for new_token in range(vocab_size, vocab_size+num_merges):
-        # 1. Count pairs of CURRENT token IDs
-        pair_counts = Counter()
-        for tokens, count in word_counts.items():
-            for pair in zip(tokens, tokens[1:]):
-                pair_counts[pair] += count
-        
+    # 1. Count pairs of CURRENT token IDs
+    pair_counts = Counter()
+    for tokens, count in word_counts.items():
+        for pair in zip(tokens, tokens[1:]):
+            pair_counts[pair] += count
+
+    for new_token in range(vocab_size, vocab_size+num_merges):        
         # 2. Pick best pair
         best_pair = pick_best_pair(pair_counts, vocab)
         if best_pair is None:
@@ -76,9 +95,10 @@ def pretokenization(text, num_merges):
 
         # 4. Replace that pair everywhere with new token ID
         word_counts = {
-            merge_pair(tokens, best_pair, new_token): count
+            merge_pair(tokens, best_pair, new_token, pair_counts, count): count
             for tokens, count in word_counts.items()
         }
+        del pair_counts[best_pair]
 
     return vocab, word_counts
 
