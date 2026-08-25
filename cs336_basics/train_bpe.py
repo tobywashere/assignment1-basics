@@ -1,7 +1,10 @@
 import argparse
 from collections import Counter
+from multiprocessing import Pool
 import pathlib
 import regex as re
+from functools import reduce
+from itertools import repeat
 
 from cs336_basics.pretokenization_example import find_chunk_boundaries
 
@@ -12,23 +15,19 @@ def bpe_tokenizer(input_path: str,
                   special_tokens: list[str],
                   num_processes=6):
     joined_special_tokens = '|'.join([re.escape(st) for st in special_tokens])
-    
-    word_counts = Counter()
 
     with open(input_path, "rb") as f:
-        boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
+        # Use the first special token to find chunk boundaries
+        boundaries = find_chunk_boundaries(f, num_processes, special_tokens[0].encode('utf-8'))
+        
+    with Pool(num_processes) as p:
+        word_count_map = p.starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
 
-        for start, end in zip(boundaries[:-1], boundaries[1:]):
-            f.seek(start)
-            chunk = f.read(end - start).decode("utf-8", errors="ignore")
-
-            for text in re.split(joined_special_tokens, chunk):
-                for word in re.finditer(PAT, text):
-                    word_counts[tuple(word.group().encode('utf-8'))] += 1
+    word_counts = reduce(merge_word_counts, word_count_map)
 
     vocab = {}
     BYTE_MAX = 256
-    assert(vocab_size > BYTE_MAX)
+    assert(vocab_size > BYTE_MAX + len(special_tokens))
     for i in range(BYTE_MAX):
         vocab[i] = bytes([i])
     for i in range(len(special_tokens)):
@@ -39,6 +38,24 @@ def bpe_tokenizer(input_path: str,
     pretokenization(word_counts, vocab, vocab_size, merges)
     
     return vocab, merges
+
+def word_count(start, end, input_path, joined_special_tokens):
+    with open(input_path, "rb") as f:
+        f.seek(start)
+        chunk = f.read(end - start).decode("utf-8", errors="ignore")
+
+    word_counts = Counter()
+
+    for text in re.split(joined_special_tokens, chunk):
+        for word in re.finditer(PAT, text):
+            word_counts[tuple(word.group().encode('utf-8'))] += 1
+
+    return word_counts
+
+def merge_word_counts(word_count1, word_count2):
+    for word, count in word_count2.items():
+        word_count1[word] += count
+    return word_count1
 
 def pretokenization(word_counts, vocab, vocab_size, merges):
     # 1. Count pairs of CURRENT token IDs
