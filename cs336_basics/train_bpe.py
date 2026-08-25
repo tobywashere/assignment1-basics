@@ -120,27 +120,27 @@ def merge_pair(tokens: tuple[int, ...],
         ):
             if i > 0:
                 old_pair = (tokens[i-1], tokens[i])
-                pair_counts[old_pair] -= count
-                assert(pair_counts[old_pair] >= 0)
-                if pair_counts[old_pair] == 0:
-                    del pair_counts[old_pair]
                 new_pair = (result[-1], new_token)
-                pair_counts[new_pair] += count
+                update_pair_counts(pair_counts, old_pair, new_pair, count)
             result.append(new_token)
             i += 2
         else:
             if result and result[-1] == new_token:
                 old_pair = (tokens[i-1], tokens[i])
-                pair_counts[old_pair] -= count
-                assert(pair_counts[old_pair] >= 0)
-                if pair_counts[old_pair] == 0:
-                    del pair_counts[old_pair]
                 new_pair = (result[-1], tokens[i])
-                pair_counts[new_pair] += count
+                update_pair_counts(pair_counts, old_pair, new_pair, count)
             result.append(tokens[i])
             i += 1
 
     return tuple(result)
+
+def update_pair_counts(pair_counts, old_pair, new_pair, count):
+    pair_counts[old_pair] -= count
+    assert(pair_counts[old_pair] >= 0)
+    if pair_counts[old_pair] == 0:
+        del pair_counts[old_pair]
+    pair_counts[new_pair] += count
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
