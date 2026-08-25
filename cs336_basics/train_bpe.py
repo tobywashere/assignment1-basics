@@ -4,11 +4,12 @@ from multiprocessing import Pool
 import pathlib
 import regex as re
 from functools import reduce
-from itertools import repeat
+from itertools import repeat, starmap
 
 from cs336_basics.pretokenization_example import find_chunk_boundaries
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+COMPILED_PAT = re.compile(PAT)
 
 def bpe_tokenizer(input_path: str,
                   vocab_size: int,
@@ -19,9 +20,12 @@ def bpe_tokenizer(input_path: str,
     with open(input_path, "rb") as f:
         # Use the first special token to find chunk boundaries
         boundaries = find_chunk_boundaries(f, num_processes, special_tokens[0].encode('utf-8'))
-        
+
     with Pool(num_processes) as p:
-        word_count_map = p.starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
+        if num_processes > 1:
+            word_count_map = p.starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
+        else:
+            word_count_map = starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
 
     word_counts = reduce(merge_word_counts, word_count_map)
 
@@ -47,7 +51,7 @@ def word_count(start, end, input_path, joined_special_tokens):
     word_counts = Counter()
 
     for text in re.split(joined_special_tokens, chunk):
-        for word in re.finditer(PAT, text):
+        for word in COMPILED_PAT.finditer(text):
             word_counts[tuple(word.group().encode('utf-8'))] += 1
 
     return word_counts
