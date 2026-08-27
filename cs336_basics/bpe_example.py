@@ -1,5 +1,5 @@
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 
 text = """                                                                                                                                                                                                       
 low low low low low                                                                                                                                                                                              
@@ -8,10 +8,15 @@ newest newest newest newest newest newest
 booook
 """
 
+class PairCounter:
+    def __init__(self):
+        self.pair_counts = Counter()
+        self.token_map = defaultdict(set)
+
 def merge_pair(tokens: tuple[int, ...],
                pair: tuple[int, int],
                new_token: int,
-               pair_counts: dict[tuple[int, int], int],
+               pair_counts: PairCounter,
                count: int) -> tuple[int, ...]:
     result = []
     i = 0
@@ -22,29 +27,27 @@ def merge_pair(tokens: tuple[int, ...],
             and tokens[i] == pair[0]
             and tokens[i + 1] == pair[1]
         ):
-            if i > 0:
-                old_pair = (tokens[i-1], tokens[i])
-                new_pair = (result[-1], new_token)
-                update_pair_counts(pair_counts, old_pair, new_pair, count)
             result.append(new_token)
             i += 2
         else:
-            if result and result[-1] == new_token:
-                old_pair = (tokens[i-1], tokens[i])
-                new_pair = (result[-1], tokens[i])
-                update_pair_counts(pair_counts, old_pair, new_pair, count)
             result.append(tokens[i])
             i += 1
 
-    return tuple(result)
+    for i in range(len(tokens)-1):
+        old_pair = (tokens[i], tokens[i+1])
+        pair_counts.pair_counts[old_pair] -= count
+        assert(pair_counts.pair_counts[old_pair] >= 0)
+        pair_counts.token_map[old_pair].remove(tokens)
+        if pair_counts.pair_counts[old_pair] == 0:
+            del pair_counts.pair_counts[old_pair]
+            del pair_counts.token_map[old_pair]
 
-def update_pair_counts(pair_counts, old_pair, new_pair, count):
-    pair_counts[old_pair] -= count
-    assert(pair_counts[old_pair] >= 0)
-    if pair_counts[old_pair] == 0:
-        del pair_counts[old_pair]
-    pair_counts[new_pair] += count
-                
+    for i in range(len(result)-1):
+        new_pair = (result[i], result[i+1])
+        pair_counts.pair_counts[new_pair] += count
+        pair_counts.token_map[new_pair].add(tuple(result))
+        
+    return tuple(result)
 
 def pick_best_pair(pair_counts, vocab):
     best_pair = None
@@ -75,17 +78,18 @@ def pretokenization(text, num_merges):
         word_counts[tuple(word.encode('utf'))] += 1
 
     # 1. Count pairs of CURRENT token IDs
-    pair_counts = Counter()
+    pair_counts = PairCounter()
     for tokens, count in word_counts.items():
         for pair in zip(tokens, tokens[1:]):
-            pair_counts[pair] += count
+            pair_counts.pair_counts[pair] += count
+            pair_counts.token_map[pair].add(tokens)
 
     for new_token in range(vocab_size, vocab_size+num_merges):        
         # 2. Pick best pair
-        best_pair = pick_best_pair(pair_counts, vocab)
+        best_pair = pick_best_pair(pair_counts.pair_counts, vocab)
         if best_pair is None:
             break
-        print(f"best_pair={best_pair}, count={pair_counts[best_pair]}")
+        print(f"best_pair={best_pair}, count={pair_counts.pair_counts[best_pair]}, tokens to merge={pair_counts.token_map[best_pair]}")
 
         # 3. Add its byte representation to vocab
         vocab[new_token] = (
@@ -94,11 +98,14 @@ def pretokenization(text, num_merges):
         )
 
         # 4. Replace that pair everywhere with new token ID
-        word_counts = {
-            merge_pair(tokens, best_pair, new_token, pair_counts, count): count
-            for tokens, count in word_counts.items()
-        }
-        del pair_counts[best_pair]
+        for tokens in list(pair_counts.token_map[best_pair]):
+            count = word_counts[tokens]
+            del word_counts[tokens]
+            new_tokens = merge_pair(tokens, best_pair, new_token, pair_counts, count)
+            word_counts[new_tokens] = count
+
+        assert(not best_pair in pair_counts.pair_counts)
+        assert(not best_pair in pair_counts.token_map)
 
     return vocab, word_counts
 
