@@ -1,31 +1,37 @@
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
+from functools import reduce
+from itertools import repeat, starmap
 from multiprocessing import Pool
 import pathlib
 import regex as re
-from functools import reduce
-from itertools import repeat, starmap
 
 from cs336_basics.pretokenization_example import find_chunk_boundaries
 
 PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 COMPILED_PAT = re.compile(PAT)
 
+class PairCounter:
+    def __init__(self):
+        self.pair_counts = Counter()
+        self.token_map = defaultdict(set)
+
 def bpe_tokenizer(input_path: str,
                   vocab_size: int,
                   special_tokens: list[str],
                   num_processes=6):
+    assert(len(special_tokens) > 0)
     joined_special_tokens = '|'.join([re.escape(st) for st in special_tokens])
 
     with open(input_path, "rb") as f:
         # Use the first special token to find chunk boundaries
         boundaries = find_chunk_boundaries(f, num_processes, special_tokens[0].encode('utf-8'))
 
-    with Pool(num_processes) as p:
-        if num_processes > 1:
+    if num_processes > 1:
+        with Pool(num_processes) as p:
             word_count_map = p.starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
-        else:
-            word_count_map = starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
+    else:
+        word_count_map = starmap(word_count, zip(boundaries[:-1], boundaries[1:], repeat(input_path), repeat(joined_special_tokens)))
 
     word_counts = reduce(merge_word_counts, word_count_map)
 
@@ -63,17 +69,18 @@ def merge_word_counts(word_count1, word_count2):
 
 def pretokenization(word_counts, vocab, vocab_size, merges):
     # 1. Count pairs of CURRENT token IDs
-    pair_counts = Counter()
+    pair_counts = PairCounter()
     for tokens, count in word_counts.items():
         for pair in zip(tokens, tokens[1:]):
-            pair_counts[pair] += count
+            pair_counts.pair_counts[pair] += count
+            pair_counts.token_map[pair].add(tokens)
 
     for new_token in range(len(vocab), vocab_size):        
         # 2. Pick best pair
-        best_pair = pick_best_pair(pair_counts, vocab)
+        best_pair = pick_best_pair(pair_counts.pair_counts, vocab)
         if best_pair is None:
             break
-
+        
         # 3. Add its byte representation to vocab
         vocab[new_token] = (
             vocab[best_pair[0]]
@@ -82,11 +89,13 @@ def pretokenization(word_counts, vocab, vocab_size, merges):
         merges.append((vocab[best_pair[0]], vocab[best_pair[1]]))
 
         # 4. Replace that pair everywhere with new token ID
-        word_counts = {
-            merge_pair(tokens, best_pair, new_token, pair_counts, count): count
-            for tokens, count in word_counts.items()
-        }
-        del pair_counts[best_pair]
+        for tokens in list(pair_counts.token_map[best_pair]):
+            count = word_counts[tokens]
+            del word_counts[tokens]
+            new_tokens = merge_pair(tokens, best_pair, new_token, pair_counts, count)
+            word_counts[new_tokens] = count
+        assert(not best_pair in pair_counts.pair_counts)
+        assert(not best_pair in pair_counts.token_map)
 
 def pick_best_pair(pair_counts, vocab):
     best_pair = None
@@ -107,7 +116,7 @@ def pick_best_pair(pair_counts, vocab):
 def merge_pair(tokens: tuple[int, ...],
                pair: tuple[int, int],
                new_token: int,
-               pair_counts: dict[tuple[int, int], int],
+               pair_counts: PairCounter,
                count: int) -> tuple[int, ...]:
     result = []
     i = 0
@@ -118,29 +127,28 @@ def merge_pair(tokens: tuple[int, ...],
             and tokens[i] == pair[0]
             and tokens[i + 1] == pair[1]
         ):
-            if i > 0:
-                old_pair = (tokens[i-1], tokens[i])
-                new_pair = (result[-1], new_token)
-                update_pair_counts(pair_counts, old_pair, new_pair, count)
             result.append(new_token)
             i += 2
         else:
-            if result and result[-1] == new_token:
-                old_pair = (tokens[i-1], tokens[i])
-                new_pair = (result[-1], tokens[i])
-                update_pair_counts(pair_counts, old_pair, new_pair, count)
             result.append(tokens[i])
             i += 1
 
-    return tuple(result)
+    for i in range(len(tokens)-1):
+        old_pair = (tokens[i], tokens[i+1])
+        pair_counts.pair_counts[old_pair] -= count
+        assert(pair_counts.pair_counts[old_pair] >= 0)
+        pair_counts.token_map[old_pair].discard(tokens)
+        if pair_counts.pair_counts[old_pair] == 0:
+            del pair_counts.pair_counts[old_pair]
+            del pair_counts.token_map[old_pair]
 
-def update_pair_counts(pair_counts, old_pair, new_pair, count):
-    pair_counts[old_pair] -= count
-    assert(pair_counts[old_pair] >= 0)
-    if pair_counts[old_pair] == 0:
-        del pair_counts[old_pair]
-    pair_counts[new_pair] += count
-    
+    new_tokens = tuple(result)
+    for i in range(len(result)-1):
+        new_pair = (result[i], result[i+1])
+        pair_counts.pair_counts[new_pair] += count
+        pair_counts.token_map[new_pair].add(new_tokens)
+
+    return new_tokens
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
