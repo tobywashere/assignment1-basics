@@ -19,7 +19,7 @@ class PairCounter:
 def bpe_tokenizer(input_path: str,
                   vocab_size: int,
                   special_tokens: list[str],
-                  num_processes=6):
+                  num_processes=6) -> tuple[dict[int, bytes], list[tuple[bytes, bytes]]]:
     assert(len(special_tokens) > 0)
     joined_special_tokens = '|'.join([re.escape(st) for st in special_tokens])
 
@@ -161,6 +161,19 @@ if __name__ == '__main__':
     vocab, merges = bpe_tokenizer(args.input_path, args.vocab_size, args.special_tokens, args.num_processes)
     print(f"vocab={vocab}")
     print(f"merges={merges}")
+
+    longest_vocab = max([len(bytes) for bytes in vocab.values()])
+    print(f"longest_vocab={longest_vocab}")
+
+    max_vocab = None
+    for key in vocab:
+        if len(vocab[key]) < longest_vocab:
+            continue
+        if max_vocab is None:
+            max_vocab = vocab[key]
+            continue
+        max_vocab = max(max_vocab, vocab[key])
+    print(f"max_vocab={max_vocab}")
     
     
     
