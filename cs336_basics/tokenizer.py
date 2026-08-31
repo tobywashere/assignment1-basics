@@ -20,6 +20,7 @@ class Tokenizer:
                     new_token += 1
         PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
         self.COMPILED_PAT = re.compile(PAT)
+        self.already_seen = {}
 
     @classmethod
     def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
@@ -54,12 +55,16 @@ class Tokenizer:
             result += self.vocab[id]
         return result.decode('utf-8', errors="replace")
 
-    def _bpe_encode(self, word: list[bytes]) -> list[bytes]:
+    def _bpe_encode(self, word: bytes) -> list[bytes]:
+        if word in self.already_seen:
+            return self.already_seen[word]
         merged_word = [word[i:i+1] for i in range(len(word))]
         # TODO: O(words x merges) is inefficient, optimize
         for merge in self.merges:
             merged_word = self._apply_merge(merged_word, merge)
-        return [self.reverse_vocab[token] for token in merged_word]
+        result = [self.reverse_vocab[token] for token in merged_word]
+        self.already_seen[word] = result
+        return result
 
     def _apply_merge(self, word, merge):
         i = 0
