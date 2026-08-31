@@ -49087,7 +49087,7 @@ endobj
 endobj
 3547 0 obj
 << /Producer (macOS Version 26.6.2 \(Build 25G83\) Quartz PDFContext, AppendMode 1.1)
-/CreationDate (D:20260407134559Z00'00') /ModDate (D:20260831000754Z00'00')
+/CreationDate (D:20260407134559Z00'00') /ModDate (D:20260831065347Z00'00')
 /Creator (Typst 0.14.2) >>
 endobj
 3549 0 obj
@@ -49096,7 +49096,7 @@ endobj
 3059 0 R (model) 3062 0 R (overview) 3020 0 R (scaled_dot_product_attention)
 3055 0 R (token_embeddings) 3043 0 R (tokenizer) 3042 0 R (training) 3070 0 R
 (training_loop) 3074 0 R (transformer_lm) 3045 0 R ] >> >> /StructTreeRoot
-84 0 R /Type /Catalog /Metadata 4373 0 R /PageLabels 83 0 R /Lang (en) /Outlines
+84 0 R /Type /Catalog /Metadata 4374 0 R /PageLabels 83 0 R /Lang (en) /Outlines
 2 0 R >>
 endobj
 3884 0 obj
@@ -54065,6 +54065,16 @@ xÍV]s›8}Ï¯`Ügf!hÓoİ4ÙİW‚¯'|-àÚù÷+ ±v:ÍtgR?á{ï¹çİ«oïîó*—m¢íó¬hÜı|–¬Ê
 Ôğ„ÀB¶:¹!¶iäLIŞQ°=­åÍ‚#ÊBb2%8B`3À"Sp0ÃÂhJò‚é´–7¶•FnÅ Œ0 Ü„D!§bÎÄïÔaöË‚¤¢+­‚©‘FğˆL±IcJ³1zÇŸ-ş›;LbÆÔ² I pÀ0à6G€"ÁLŠpŠßéĞBêVŸDoVŒ4C+d ¦„ìµ‰Y«CÌ¦Ci`Æ¿²‰‡Ã{|]Mk¾tÑuÏõ`sÿè5>V›wl9ÊzÛ¸Kÿ)ëFİÿ>ÒUğÄö=Tsò@î/ÑÁªßş•byyÊûWÿDúJå
 endstream
 endobj
+4374 0 obj
+<< /Type /Metadata /Subtype /XML /Filter /FlateDecode /Length 894 >> stream
+xÅW]s£6}Ï¯`ÜgHfÚ¦3nİ4Ûî+ÁŠ×¾píüû
+Hlƒõtgœ'ruÏ=çè^,áíİ}^å²M´}»ŸÏ’Uù$]õÜ…™Ö§´/óÙ—ÅR‹ÊZj¶u8óï4MóêÕ³ûÀÅ\ı7Ÿ}mÛÊ5Œİn§ï,½¬×bŒĞ4L¨Ğ¼m²EóËPä½—MZoªvSZW7y*·í|6ëˆƒÎUzà©¶uÖ³¬RCf2—EÛHGÆ%œr{ Ş{ÕÓ27öI¥@ğ#Ğbñ}X_D&U•IPÕòßÜ*t=ñrXüùãr=Âv‰nj}‘¿:éÇÈ®ZPŒ–qh€Ú_o•ºYR¬·ÉZöÍ=ìyßå0Y£¤kS¶ñeáo£fÑ1Ò3.ótôÏe'­ßmÛ&MºA0”Òñ¶t,ï©^º‹rµy~åI+}š6€@çY.&.aêÙ…Ğ3&™“Q-“¶¬Ë2ó_«¦Õ °n¸ÓÕK@ù#ä}‘!s\c±pd±ÚtV£,i¿ªËR9V’Ï×Î°¼L·İÀßsÿÓoÙ.
+ı~
+‹àéZP¿ü9Ÿ¿—:I=+s_4mR¤òÊœ¤”Í¹–åKÔ/Íx^úaùK~GSÔ¿óUR7RuAÎg²)·u*Ogô8’cÊ¥šÙûb%÷>öŒ–‚?*óù³Ú;)Lb Ç¦ ‰" ‰E0Å4˜’ôÀiıËïÄÏ6L¦Z{1ÔQ7§×9´,Çr”MŠ†‡€e;N¤¼tJrCÃöTËÕ†F&£(¤BF„
+ I€¢H`3²¦$74ìLµ\m3‡bfB`Û±iAMPÎG, ¦ˆ!gïÍŸMÛõ†FÎÀ­Pu˜ñÌ 1†–`‚9lº«74|¦åjÃ” D,Õ×Ø&`CÀBj˜„J0BgctCÃHÊã_¢«#›cR ¹:õ1„± @ ˆm³Ğ¶Â)É-£©˜«‹…Ã`qçØŠ`Ã ŒØùÿéñp\è©æKG{wSWT÷÷ÎPãc¥a9CºÍ¹K.ş–u£n<>ÒUò$ö–=¨9ù$è¯CT}pøwŠåıãÅ¿ûiGŒ
+
+endstream
+endobj
 xref
 0 1
 0000000000 65535 f 
@@ -54170,7 +54180,7 @@ xref
 0001723159 00000 n 
 0001723190 00000 n 
 0001745806 00000 n 
-3979 395
+3979 396
 0001745855 00000 n 
 0001746297 00000 n 
 0001746403 00000 n 
@@ -54566,8 +54576,9 @@ xref
 0002513851 00000 n 
 0002514107 00000 n 
 0002523517 00000 n 
+0002524480 00000 n 
 trailer
-<< /ID [<474A6C77434248573047426E41624F386E3830456B513D3D><EAED28CBD813B4E9AB7A89DEF92495F6> ] /Root 3549 0 R /Size 4374 /Prev 1702347 /Info 3547 0 R >> 
+<< /ID [<474A6C77434248573047426E41624F386E3830456B513D3D><CA749837D73C18A65C718DF9259A5484> ] /Root 3549 0 R /Size 4375 /Prev 1702347 /Info 3547 0 R >> 
 startxref
-2524480
+2525479
 %%EOF
