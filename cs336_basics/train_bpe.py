@@ -5,6 +5,7 @@ from itertools import repeat, starmap
 from multiprocessing import Pool
 import pathlib
 import regex as re
+from pickle import dump
 
 from cs336_basics.pretokenization_example import find_chunk_boundaries
 
@@ -159,8 +160,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     vocab, merges = bpe_tokenizer(args.input_path, args.vocab_size, args.special_tokens, args.num_processes)
-    print(f"vocab={vocab}")
-    print(f"merges={merges}")
+    with open(args.input_path.stem + "_vocab" + args.input_path.suffix, 'wb') as f:
+        dump(vocab, f)
+    with open(args.input_path.stem + "_merges" + args.input_path.suffix, 'wb') as f:
+        dump(merges, f)
 
     longest_vocab = max([len(bytes) for bytes in vocab.values()])
     print(f"longest_vocab={longest_vocab}")
