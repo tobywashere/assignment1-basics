@@ -163,5 +163,5 @@ cython_debug/
 *.zip
 *~
 data/
-vocab_and_merges/
+vocab_merges/
 tokenized_ids/

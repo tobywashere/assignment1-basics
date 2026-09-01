@@ -8,7 +8,7 @@ class Tokenizer:
     def __init__(self, vocab, merges, special_tokens=None):
         self.vocab = vocab
         self.reverse_vocab = {value: key for key, value in vocab.items()}
-        self.merges = merges
+        self.merges = {merge: order for order, merge in enumerate(merges)} 
         self.special_tokens = special_tokens
         if special_tokens:
             sorted_st = sorted(special_tokens, key=len, reverse=True)
@@ -59,11 +59,21 @@ class Tokenizer:
 
     def _bpe_encode(self, word: bytes) -> list[bytes]:
         if word in self.already_seen:
-            return self.already_seen[word]
+            return list(self.already_seen[word])
         merged_word = [word[i:i+1] for i in range(len(word))]
-        # TODO: O(words x merges) is inefficient, optimize
-        for merge in self.merges:
-            merged_word = self._apply_merge(merged_word, merge)
+
+        while True:
+            min_pair = None
+            min_pri = float('inf')
+            for i in range(len(merged_word)-1):
+                pair = (merged_word[i], merged_word[i+1]) 
+                if pair in self.merges and self.merges[pair] < min_pri:
+                    min_pri = self.merges[pair]
+                    min_pair = pair
+            if min_pair is None:
+                break            
+            merged_word = self._apply_merge(merged_word, min_pair)
+            
         result = [self.reverse_vocab[token] for token in merged_word]
         self.already_seen[word] = result
         return result
