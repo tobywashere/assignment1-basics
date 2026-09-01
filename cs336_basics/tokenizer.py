@@ -1,5 +1,7 @@
+import argparse
 from collections.abc import Iterable, Iterator
-from pickle import load
+import pathlib
+from pickle import load, dump
 import regex as re
 
 class Tokenizer:
@@ -79,18 +81,18 @@ class Tokenizer:
         return result
 
 if __name__ == '__main__':
-    vocab = {0: b' ', 1: b'a', 2: b'c', 3: b'e', 4: b'h', 5: b't', 6: b'th', 7: b' c', 8: b' a', 9: b'the', 10: b' at'}
-    merges = [(b't', b'h'), (b' ', b'c'), (b' ', b'a'), (b'th', b'e'), (b' a', b't')]
-    input_string = 'the cat<|endoftext|>ate'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('vocab_path', type=pathlib.Path)
+    parser.add_argument('merge_path', type=pathlib.Path)
+    parser.add_argument('--special_tokens', type=list[str], default=['<|endoftext|>'])
+    parser.add_argument('--encode_path', type=pathlib.Path, default=None)
+    args = parser.parse_args()
 
-    tokenizer = Tokenizer(vocab, merges, ['<|endoftext|>'])
+    tokenizer = Tokenizer.from_files(args.vocab_path, args.merge_path, args.special_tokens)
 
-    encoded_text = tokenizer.encode(input_string)
-
-    print(f"encoded_text = {encoded_text}")
-
-    decoded_text = tokenizer.decode(encoded_text)
-
-    print(f"decoded_text = {decoded_text}")
-
-    assert(decoded_text == input_string)
+    if args.encode_path:
+        with open(args.encode_path, 'r') as f:
+            ids = list(tokenizer.encode_iterable(f))
+        with open(args.encode_path.stem + "_ids" + args.encode_path.suffix, 'wb') as f:
+            dump(ids, f)
+        
