@@ -53,7 +53,7 @@ class Tokenizer:
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
         if self.num_processes > 1:
             with Pool(self.num_processes) as p:
-                for ids in p.map(self.encode, iterable):
+                for ids in p.imap(self.encode, iterable, chunksize=10**5):
                     yield from ids
         else:
             for text in iterable:
