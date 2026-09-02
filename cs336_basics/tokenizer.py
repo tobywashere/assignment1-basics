@@ -1,11 +1,13 @@
 import argparse
 from collections.abc import Iterable, Iterator
+from multiprocessing import Pool
 import pathlib
-from pickle import load, dump
+from pickle import load
 import regex as re
+import numpy as np
 
 class Tokenizer:
-    def __init__(self, vocab, merges, special_tokens=None):
+    def __init__(self, vocab, merges, special_tokens=None, num_processes=6):
         self.vocab = vocab
         self.reverse_vocab = {value: key for key, value in vocab.items()}
         self.merges = {merge: order for order, merge in enumerate(merges)} 
@@ -20,17 +22,18 @@ class Tokenizer:
                     self.vocab[new_token] = encoded_st
                     self.reverse_vocab[encoded_st] = new_token
                     new_token += 1
+        self.num_processes = num_processes
         PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
         self.COMPILED_PAT = re.compile(PAT)
         self.already_seen = {}
 
     @classmethod
-    def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
+    def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None, num_processes=6):
         with open(vocab_filepath, 'rb') as f:
             vocab = load(f)
         with open(merges_filepath, 'rb') as f:
             merges = load(f)
-        return cls(vocab, merges, special_tokens)
+        return cls(vocab, merges, special_tokens, num_processes)
 
     def encode(self, txt: str) -> list[int]:
         if self.special_tokens:
@@ -48,8 +51,13 @@ class Tokenizer:
         return result
 
     def encode_iterable(self, iterable: Iterable[str]) -> Iterator[int]:
-        for text in iterable:
-            yield from self.encode(text)
+        if self.num_processes > 1:
+            with Pool(self.num_processes) as p:
+                for ids in p.map(self.encode, iterable):
+                    yield from ids
+        else:
+            for text in iterable:
+                yield from self.encode(text)
 
     def decode(self, ids: list[int]) -> str:
         result = bytes()
@@ -96,13 +104,14 @@ if __name__ == '__main__':
     parser.add_argument('merge_path', type=pathlib.Path)
     parser.add_argument('--special_tokens', type=list[str], default=['<|endoftext|>'])
     parser.add_argument('--encode_path', type=pathlib.Path, default=None)
+    parser.add_argument('--num_processes', type=int, default=6)
     args = parser.parse_args()
 
-    tokenizer = Tokenizer.from_files(args.vocab_path, args.merge_path, args.special_tokens)
+    tokenizer = Tokenizer.from_files(args.vocab_path, args.merge_path, args.special_tokens, args.num_processes)
 
     if args.encode_path:
         with open(args.encode_path, 'r') as f:
             ids = list(tokenizer.encode_iterable(f))
-        with open(args.encode_path.stem + "_ids" + args.encode_path.suffix, 'wb') as f:
-            dump(ids, f)
+            np_ids = np.array(ids, dtype=np.uint16)
+            np.save(args.encode_path.stem + "_ids", np_ids)
         
