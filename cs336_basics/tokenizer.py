@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     if args.encode_path:
         with open(args.encode_path, 'r') as f:
-            ids = list(tokenizer.encode_iterable(f))
-            np_ids = np.array(ids, dtype=np.uint16)
+            ids = tokenizer.encode_iterable(f)
+            np_ids = np.fromiter(ids, dtype=np.uint16)
             np.save(args.encode_path.stem + "_ids", np_ids)
         
