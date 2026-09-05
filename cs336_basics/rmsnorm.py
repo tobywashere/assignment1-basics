@@ -13,10 +13,7 @@ class RMSNorm(nn.Module):
         in_dtype = x.dtype
         x = x.to(torch.float32)
 
-        rms_a = einsum(x, x, "batch_size seq_len d_model, batch_size seq_len d_model -> batch_size seq_len")
-        rms_a /= self.d_model
-        rms_a += self.eps
-        rms_a = torch.sqrt(rms_a)
+        rms_a = torch.sqrt(einsum(x, x, "batch_size seq_len d_model, batch_size seq_len d_model -> batch_size seq_len") / self.d_model + self.eps)
         rms_a = rearrange(rms_a, "batch seq_len -> batch seq_len 1")
         result = x / rms_a * self.g
 
