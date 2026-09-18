@@ -6,8 +6,8 @@ class RotaryPositionalEmbedding(nn.Module):
     def __init__(self, theta: float, d_k: int, max_seq_len: int, device=None):
         super().__init__()
         assert d_k % 2 == 0, "d_k isn't even"
-        i = torch.arange(max_seq_len)[:, None]
-        k = torch.arange(1, d_k//2+1)
+        i = torch.arange(max_seq_len, device=device)[:, None]
+        k = torch.arange(1, d_k//2+1, device=device)
         thetas = i / theta**((2*k-2)/d_k)
         cos = torch.cos(thetas)
         sin = torch.sin(thetas)
