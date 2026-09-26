@@ -10,7 +10,8 @@ def softmax(x: torch.Tensor, dim: int) -> torch.Tensor:
     return expo / sums
 
 if __name__ == '__main__':
-    # A tensor of fully-masked rows produce NaN and poisons the output, which shouldn't occur here
+    # A tensor of fully-masked rows produce NaN and poisons the output.
+    # The caller is responsible for ensuring this case doesn't happen.
     mask = torch.tensor([[-float('inf'), -float('inf')]])
     result = softmax(mask, 1)
     print(f"tobyhuang debug: fully masked row produces NaNs: {result}")
