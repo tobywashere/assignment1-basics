@@ -14,6 +14,12 @@ class TransformerBlock(nn.Module):
         self.ln2 = RMSNorm(d_model)
         self.ffn = SwiGLU(d_model, d_ff)
 
-    def forward(self, x: torch.Tensor, rope: RotaryPositionalEmbedding, token_positions: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, rope: RotaryPositionalEmbedding | None = None, token_positions: torch.Tensor | None = None) -> torch.Tensor:
         y = x + self.attn(self.ln1(x), rope, token_positions)
         return y + self.ffn(self.ln2(y))
+
+if __name__ == '__main__':
+    m = TransformerBlock(100, 4, 256)
+    input = torch.randn(300, 200, 100)
+    output = m(input)
+    assert output.shape == (300, 200, 100)
