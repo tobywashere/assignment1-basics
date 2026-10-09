@@ -40,7 +40,7 @@ def run_linear(
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
     m = Linear(d_in, d_out)
-    m.load_state_dict({'W': weights})
+    m.load_state_dict({'weight': weights})
     return m(in_features)
 
 def run_embedding(
@@ -62,7 +62,7 @@ def run_embedding(
         Float[Tensor, "... d_model"]: Batch of embeddings returned by your Embedding layer.
     """
     embedding = Embedding(vocab_size, d_model)
-    embedding.load_state_dict({'W': weights})
+    embedding.load_state_dict({'weight': weights})
     return embedding(token_ids)
 
 def run_swiglu(
@@ -95,7 +95,7 @@ def run_swiglu(
     # swiglu.w2.weight.data = w2_weight
     # swiglu.w3.weight.data = w3_weight
     m = SwiGLU(d_model, d_ff)
-    m.load_state_dict({'W1': w1_weight, 'W2': w2_weight, 'W3': w3_weight})
+    m.load_state_dict({'w1.weight': w1_weight, 'w2.weight': w2_weight, 'w3.weight': w3_weight})
     return m(in_features)
 
 
@@ -151,7 +151,7 @@ def run_multihead_self_attention(
         implementation with the given QKV projection weights and input features.
     """
     m = MultiheadSelfAttention(d_model, num_heads)
-    m.load_state_dict({'Q': q_proj_weight, 'K': k_proj_weight, 'V': v_proj_weight, 'O': o_proj_weight})
+    m.load_state_dict({'q_proj.weight': q_proj_weight, 'k_proj.weight': k_proj_weight, 'v_proj.weight': v_proj_weight, 'output_proj.weight': o_proj_weight})
     return m(in_features)
 
 
@@ -194,7 +194,7 @@ def run_multihead_self_attention_with_rope(
     """
     m = MultiheadSelfAttention(d_model, num_heads)
     rope = RotaryPositionalEmbedding(theta, d_model // num_heads, max_seq_len)
-    m.load_state_dict({'Q': q_proj_weight, 'K': k_proj_weight, 'V': v_proj_weight, 'O': o_proj_weight})
+    m.load_state_dict({'q_proj.weight': q_proj_weight, 'k_proj.weight': k_proj_weight, 'v_proj.weight': v_proj_weight, 'output_proj.weight': o_proj_weight})
     return m(in_features, rope, token_positions)
 
 
@@ -293,16 +293,7 @@ def run_transformer_block(
     """
     block = TransformerBlock(d_model, num_heads, d_ff)
     rope = RotaryPositionalEmbedding(theta, d_model // num_heads, max_seq_len)
-    block.load_state_dict({'attn.Q': weights['attn.q_proj.weight'],
-                           'attn.K': weights['attn.k_proj.weight'],
-                           'attn.V': weights['attn.v_proj.weight'],
-                           'attn.O': weights['attn.output_proj.weight'],
-                           'ln1.g': weights['ln1.weight'],
-                           'ffn.W1': weights['ffn.w1.weight'],
-                           'ffn.W2': weights['ffn.w2.weight'],
-                           'ffn.W3': weights['ffn.w3.weight'],
-                           'ln2.g': weights['ln2.weight'],
-                           })
+    block.load_state_dict(weights)
     token_positions = torch.arange(in_features.shape[-2])
     return block(in_features, rope, token_positions)
 
@@ -409,7 +400,7 @@ def run_rmsnorm(
         RMSNorm of the `in_features`.
     """
     rms_norm = RMSNorm(d_model, eps)
-    rms_norm.load_state_dict({'g': weights})
+    rms_norm.load_state_dict({'weight': weights})
     return rms_norm(in_features)
 
 

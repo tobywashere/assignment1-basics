@@ -4,6 +4,7 @@ import torch
 
 from cs336_basics.scaled_dot_product_attention import attention
 from cs336_basics.rope import RotaryPositionalEmbedding
+from cs336_basics.linear import Linear
 
 class MultiheadSelfAttention(nn.Module):
     def __init__(self, d_model: int, num_heads: int):
@@ -11,14 +12,14 @@ class MultiheadSelfAttention(nn.Module):
         self.num_heads = num_heads
         assert d_model % num_heads == 0
         self.d_k = self.d_v = d_model // num_heads
-        self.Q = nn.Parameter(torch.empty(num_heads * self.d_k, d_model))
-        self.K = nn.Parameter(torch.empty(num_heads * self.d_k, d_model))
-        self.V = nn.Parameter(torch.empty(num_heads * self.d_v, d_model))
-        self.O = nn.Parameter(torch.empty(d_model, num_heads * self.d_v))
+        self.q_proj = Linear(num_heads * self.d_k, d_model)
+        self.k_proj = Linear(num_heads * self.d_k, d_model)
+        self.v_proj = Linear(num_heads * self.d_v, d_model)
+        self.output_proj = Linear(d_model, num_heads * self.d_v)
 
     def forward(self, x: torch.Tensor, rope: RotaryPositionalEmbedding | None = None, token_positions: torch.Tensor | None = None) -> torch.Tensor:
         seq_len = x.shape[-2]
-        proj = torch.cat([self.Q, self.K, self.V], dim=0)
+        proj = torch.cat([self.q_proj.weight, self.k_proj.weight, self.v_proj.weight], dim=0)
         proj = einsum(proj, x, "h3d_k d_model, ... seq_len d_model -> ... seq_len h3d_k")
         q_proj = proj.narrow(dim=-1, start=0, length=self.num_heads*self.d_k)
         k_proj = proj.narrow(dim=-1, start=self.num_heads*self.d_k, length=self.num_heads*self.d_k)
@@ -34,5 +35,4 @@ class MultiheadSelfAttention(nn.Module):
         mask = j <= i
         multihead = attention(q_proj, k_proj, v_proj, mask)
         multihead = rearrange(multihead, "h ... seq_len d_v -> ... seq_len (h d_v)")
-        return einsum(self.O, multihead, "d_model hd_v, ... seq_len hd_v -> ... seq_len d_model")
-        
+        return self.output_proj(multihead)        
