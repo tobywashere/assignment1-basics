@@ -1,0 +1,3 @@
+a) Since the training data is predominantly ASCII text, UTF-8 encoding has smaller sequence length, fewer zero bytes and byte order marks compared to UTF-16 and UTF-32. That means more vocabulary entries encode useful pairs instead of zero-byte and BOM pairs.
+b) b'\xe3\x81\x93' is an example input byte string that throws a UnicodeDecodeError because \xe3 denotes a multi-byte character. The function is incorrect because it assumes each byte corresponds to one unicode character, which breaks for multi-byte characters.
+c) b'\xc3\x28' does not decode to any Unicode characters because \xc3 starts a two-byte sequence, but \x28 is not a valid continuation byte (must be in \x80 - \xBF range).
