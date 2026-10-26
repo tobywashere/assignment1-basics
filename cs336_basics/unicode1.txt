@@ -1,0 +1,3 @@
+a) chr(0) returns the null character '\x00' with code point U+0000
+b) The string representation is '\x00' while the printed representation is not drawn in most terminals
+c) The combined string is not cut off at the null character unlike C, and the two strings next to the null character appear directly adjacent like "teststring", while taking the len() of the string still counts the null character and the characters after it.
