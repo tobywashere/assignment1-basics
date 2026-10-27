@@ -168,14 +168,11 @@ if __name__ == '__main__':
     longest_vocab = max([len(bytes) for bytes in vocab.values()])
     print(f"longest_vocab={longest_vocab}")
 
-    max_vocab = None
+    max_vocab = set()
     for key in vocab:
         if len(vocab[key]) < longest_vocab:
             continue
-        if max_vocab is None:
-            max_vocab = vocab[key]
-            continue
-        max_vocab = max(max_vocab, vocab[key])
+        max_vocab.add(vocab[key])
     print(f"max_vocab={max_vocab}")
     
     
