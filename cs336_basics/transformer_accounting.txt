@@ -1,0 +1,26 @@
+a) The GPT-2 XL-sized model has 1,640,452,800 trainable parameters (160,822,400 from embedding and output, 155,200 from all the norm layers, 491,520,000 from MultiheadSelfAttention, and 987,955,200 from SwiGLU). Assuming 4 bytes per single-precision floating point, the memory required to load this model is 6.56 GB or 6.11 GiB.
+b)
+Multi-head self attention
+* Qx (d_model x d_model) @ (d_model x context_length) -> 5,242,880,000 flops
+* Kx (d_model x d_model) @ (d_model x context_length) -> 5,242,880,000 flops
+* Vx (d_model x d_model) @ (d_model x context_length) -> 5,242,880,000 flops
+* QK^T (context_length x d_k) @ (d_k x context_length) -> 134,217,728 flops per head x 25 heads -> 3,355,443,200 flops
+* attention weights @ V (context_length x context_length) @ (context_length x d_v) -> 134,217,728 flops per head x 25 heads -> 3,355,443,200 flops
+* Ox (d_model x d_model) @ (d_model x context_length) -> 5,242,880,000 flops
+* Total: 27,682,406,400 flops
+SwiGLU
+* W1x (d_ff x d_model) @ (d_model x context_length) -> 14,050,918,400 flops
+* W3x (d_ff x d_model) @ (d_model x context_length) -> 14,050,918,400 flops
+* W2x (d_model x d_ff) @ (d_ff x context_length) -> 14,050,918,400 flops
+* Total: 42,152,755,200 flops
+Final output
+* (vocab_size x d_model) @ (d_model x context_length) -> 164,682,137,600 flops
+Since there are 48 transformer blocks plus a final output projection, one forward pass should require 3.517 TFLOPs. I left out elementwise ops (softmax, RMSNorm, SiLU, and RoPE) because they're lower order.
+c) I'll divide the model into four groups: attention projections (1.01 TFLOPs, 28.62% of total), attention score/value matmuls (0.32 TFLOPs, 9.16% of total), FFN (2.02 TFLOPs, 57.53% of total), and LM head (0.16 TFLOPs, 4.68% of total). Therefore, the feed forward network requires the most FLOPs, because the FFN contains twice the number of learnable parameters (60.22% of the total) as the multi-head self attention component and the number of FLOPs is directly proportional to learnable parameters times the context length for weight matmuls.
+d)
+GPT-2 small (d_ff=2,048): attention projections (57.98 GFLOPs, 19.88% of total), attention score/value matmuls (38.65 GFLOPs, 13.25% of total), FFN (115.96 GFLOPs, 39.76% of total), and LM head (79.05 GFLOPs, 27.1% of total).
+GPT-2 medium (d_ff=2,752): attention projections (206.16 GFLOPs, 24.83% of total), attention score/value matmuls (103.08 GFLOPs, 12.42% of total), FFN (415.54 GFLOPs, 50.05% of total), and LM head (105.4 GFLOPs, 12.70% of total).
+GPT-2 large (d_ff=3,392): attention projections (483.18 GFLOPs, 27.32% of total), attention score/value matmuls (193.27 GFLOPs, 10.93% of total), FFN (960.33 GFLOPs, 54.30% of total), and LM head (131.75 GFLOPs, 7.45% of total).
+GPT-2 XL (d_ff=4,288): attention projections (1,006.63 GFLOPs, 28.62% of total), attention score/value matmuls (322.12 GFLOPs, 9.16% of total), FFN (2,023.33 GFLOPs, 57.53% of total), and LM head (164.68 GFLOPs, 4.68% of total).
+As the model size increases, the attention projections and FFN consume proportionally more FLOPs due to scaling with O(d_model^2), while the attention score/value matmuls and LM head consume proportionally fewer FLOPs due to only scaling linearly with d_model.
+e) If we 16x the context length to 16,384, then attention projections take 16.11 TFLOPs or 12.06% of total, attention score/value matmuls take 82.46 TFLOPs or 61.73% of total, FFN takes 32.37 TFLOPs or 24.24% of total, and LM head takes 2.63 TFLOPs or 1.97% of the total. The dramatic rise in proportion of FLOPs dedicated to attention score/value matmuls can be explained by scaling with O(context_length^2), while the other three components only scale linearly with context size, and total FLOPs increase ~38× (from 3.52 to 133.58 TFLOPs), far more than the 16× increase in context length.
