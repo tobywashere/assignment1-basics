@@ -58,6 +58,18 @@ def test_cross_entropy():
         atol=1e-4,
     )
 
+    numpy.testing.assert_allclose(
+        run_cross_entropy(inputs, targets).detach().numpy(),
+        expected.detach().numpy(),
+        atol=1e-4,
+    )
+    negative_inputs = -1000.0 * inputs
+    negative_expected_cross_entropy = F.cross_entropy(negative_inputs.view(-1, negative_inputs.size(-1)), targets.view(-1))
+    numpy.testing.assert_allclose(
+        run_cross_entropy(negative_inputs, targets).detach().numpy(),
+        negative_expected_cross_entropy.detach().numpy(),
+        atol=1e-4,
+    )
 
 def test_gradient_clipping():
     tensors = [torch.randn((5, 5)) for _ in range(6)]
