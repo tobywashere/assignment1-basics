@@ -1,0 +1,2 @@
+For the 1e1 learning rate, the loss decays from about 24.04 to 3.23 over ten training iterations; for the 1e2 learning rate, the loss decays more quickly from 23.56 to near zero after just five iterations; for the 1e3 learning rate, the loss diverges over the first ten iterations because the learning rate is too high, causing the weights to climb further from the minimum. Given enough training iterations, the 1e3 loss will eventually converge since the learning rate decays.
+
